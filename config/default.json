@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://harshitmalik29:memorygame@memorygame.xczlz.mongodb.net/memorygame?retryWrites=true&w=majority&appName=MemoryGame",
+  "jwtSecret": "secret"
+}
