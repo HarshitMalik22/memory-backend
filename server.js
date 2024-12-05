@@ -1,15 +1,18 @@
 const express = require('express');
 const connectDB = require('./config/db');
 const path = require('path');
-const HighScore = require('./models/HighScore'); // High score model import
-const cors = require('cors'); // Import cors
+const HighScore = require('./models/HighScore');
+const cors = require('cors'); 
 const app = express();
 
 // Connect DB with error handling
 connectDB();
 
-// Use CORS middleware
-app.use(cors());
+// Use CORS middleware for Vercel frontend
+app.use(cors({
+  origin: 'https://memory-frontend-delta.vercel.app', // Vercel frontend domain
+  credentials: true,
+}));
 
 // Initialize middleware
 app.use(express.json());
@@ -23,23 +26,18 @@ app.use('/api/history', require('./routes/history'));
 app.post('/api/highscore', async (req, res) => {
   try {
     const { username, moves, level } = req.body;
-
     if (!username || !moves || !level) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-
     if (typeof username !== 'string' || typeof moves !== 'number' || typeof level !== 'string' || moves <= 0) {
       return res.status(400).json({ message: 'Invalid data types or moves must be positive' });
     }
-
     const existingHighScore = await HighScore.findOne({ level }).sort({ moves: 1 });
-
     if (!existingHighScore || moves < existingHighScore.moves) {
       const newHighScore = new HighScore({ username, moves, level });
       await newHighScore.save();
       return res.status(201).json({ message: 'New high score submitted successfully' });
     }
-
     res.status(200).json({ message: 'High score not updated because an existing high score is lower' });
   } catch (error) {
     res.status(500).json({ message: 'Error submitting high score', error: error.message });
@@ -61,7 +59,7 @@ app.get('/api/highscore/:level', async (req, res) => {
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('client/build'));
+  app.use(express.static(path.join(__dirname, 'client/build')));
   app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html')));
 }
 
