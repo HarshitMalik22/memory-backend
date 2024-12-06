@@ -1,30 +1,29 @@
 const express = require('express');
 const connectDB = require('./config/db');
+const path = require('path');
 const HighScore = require('./models/HighScore'); // High score model import
 const cors = require('cors'); // Import cors
 const app = express();
 
-// Connect to the database
+// Connect DB with error handling
 connectDB();
 
-// Use CORS middleware and configure it to allow requests from your frontend domain
-app.use(
-  cors({
-    origin: 'https://memory-frontend-delta.vercel.app', // Replace this with your actual frontend domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
-    credentials: true, // Enable sending cookies with cross-origin requests, if needed
-  })
-);
+// Use CORS middleware to allow requests from the frontend
+app.use(cors({
+  origin: 'https://memory-frontend-delta.vercel.app', // Your frontend's domain
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
 
-// Initialize middleware to parse JSON
+// Initialize middleware for JSON parsing
 app.use(express.json());
 
-// Define API Routes
+// Define Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/history', require('./routes/history'));
 
-// High Score Routes
+// High Score Route
 app.post('/api/highscore', async (req, res) => {
   try {
     const { username, moves, level } = req.body;
@@ -64,7 +63,12 @@ app.get('/api/highscore/:level', async (req, res) => {
   }
 });
 
-// Set up the port for the backend
+// Root Route for Testing
+app.get('/', (req, res) => {
+  res.send('API is running...');
+});
+
+// Declare port
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => console.log(`Backend server started on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
