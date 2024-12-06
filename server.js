@@ -9,15 +9,16 @@ const app = express();
 connectDB();
 
 // Use CORS middleware to allow requests from the frontend
-const cors = require('cors');
-
 const corsOptions = {
-  origin: 'https://memory-frontend-delta.vercel.app/',
+  origin: 'https://memory-frontend-delta.vercel.app', // Remove trailing slash
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Initialize middleware for JSON parsing
 app.use(express.json());
@@ -36,8 +37,15 @@ app.post('/api/highscore', async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    if (typeof username !== 'string' || typeof moves !== 'number' || typeof level !== 'string' || moves <= 0) {
-      return res.status(400).json({ message: 'Invalid data types or moves must be positive' });
+    if (
+      typeof username !== 'string' ||
+      typeof moves !== 'number' ||
+      typeof level !== 'string' ||
+      moves <= 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Invalid data types or moves must be positive' });
     }
 
     const existingHighScore = await HighScore.findOne({ level }).sort({ moves: 1 });
@@ -45,12 +53,18 @@ app.post('/api/highscore', async (req, res) => {
     if (!existingHighScore || moves < existingHighScore.moves) {
       const newHighScore = new HighScore({ username, moves, level });
       await newHighScore.save();
-      return res.status(201).json({ message: 'New high score submitted successfully' });
+      return res
+        .status(201)
+        .json({ message: 'New high score submitted successfully' });
     }
 
-    res.status(200).json({ message: 'High score not updated because an existing high score is lower' });
+    res.status(200).json({
+      message: 'High score not updated because an existing high score is lower',
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error submitting high score', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error submitting high score', error: error.message });
   }
 });
 
@@ -63,7 +77,9 @@ app.get('/api/highscore/:level', async (req, res) => {
     }
     res.status(404).json({ message: 'No high score found for this level' });
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving high scores', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error retrieving high scores', error: error.message });
   }
 });
 
