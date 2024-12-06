@@ -5,80 +5,77 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const auth = require('../middleware/auth');
 const { check, validationResult } = require('express-validator');
-
 const User = require('../models/Users');
 
 // @route   GET api/auth
-// @desc    Get logged in user
+// @desc    Get logged-in user
 // @access  Private
 router.get('/', auth, async (req, res) => {
-  // declare user variable from database, except password
   try {
+    // Fetch user by ID, exclude the password
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
     res.json(user);
-    // return error if found
   } catch (err) {
-    console.error(err.message);
+    console.error('Error fetching user:', err.message);
     res.status(500).send('Server Error');
   }
 });
 
 // @route   POST api/auth
-// @desc    Authorize user and get token
+// @desc    Authenticate user and return token
 // @access  Public
 router.post(
   '/',
-  // check email and password are valid
   [
-    check('email', 'please enter valid email').isEmail(),
-    check('password', 'password is required').exists(),
+    check('email', 'Please enter a valid email').isEmail(),
+    check('password', 'Password is required').exists(),
   ],
   async (req, res) => {
-    // declare errors array
     const errors = validationResult(req);
-    // if errors found, return message
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // declare variables from request
     const { email, password } = req.body;
 
     try {
-      // find user in database, return err msg if not found
-      let user = await User.findOne({ email });
+      // Find user in the database
+      const user = await User.findOne({ email });
       if (!user) {
-        return res.status(400).json({ msg: 'invalid credentials' });
+        return res.status(400).json({ msg: 'Invalid credentials (email not found)' });
       }
 
-      // check passwords match, return err msg if not
+      // Verify password
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res.status(400).json({ msg: 'invalid credentials' });
+        return res.status(400).json({ msg: 'Invalid credentials (password mismatch)' });
       }
 
-      // declare variable with user info
+      // Payload for JWT
       const payload = {
         user: {
           id: user.id,
         },
       };
 
-      // sign user in, sign ou after 1 hour
+      // Sign the token
       jwt.sign(
         payload,
         config.get('jwtSecret'),
-        {
-          expiresIn: 3600,
-        },
+        { expiresIn: 3600 }, // Token valid for 1 hour
         (err, token) => {
-          if (err) throw err;
+          if (err) {
+            console.error('Error signing token:', err.message);
+            throw err;
+          }
           res.json({ token });
         }
       );
-      // return err msg if found
     } catch (err) {
-      console.error(err.message);
+      console.error('Error authenticating user:', err.message);
       res.status(500).send('Server Error');
     }
   }
