@@ -9,11 +9,15 @@ const app = express();
 connectDB();
 
 // Use CORS middleware to allow requests from the frontend
-app.use(cors({
-  origin: 'https://memory-frontend-delta.vercel.app', // Your frontend's domain
+const cors = require('cors');
+
+const corsOptions = {
+  origin: 'https://memory-frontend-delta.vercel.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 // Initialize middleware for JSON parsing
 app.use(express.json());
