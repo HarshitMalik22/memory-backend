@@ -1,4 +1,4 @@
 {
   "mongoURI": "mongodb+srv://harshitmalik29:memorygame@memorygame.xczlz.mongodb.net/memorygame?retryWrites=true&w=majority&appName=MemoryGame",
-  "jwtSecret": "secret"
+  "jwtSecret": "a57f4a8e8b98e7d21fc8c5f2c95e904d12413dbfa11fbd869eb872f43284719f"
 }
