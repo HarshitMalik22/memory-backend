@@ -12,7 +12,7 @@ connectDB();
 const cors = require('cors');
 
 const corsOptions = {
-  origin: 'https://memory-frontend-delta.vercel.app',
+  origin: 'https://memory-seven-flax.vercel.app/',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
