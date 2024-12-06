@@ -7,11 +7,11 @@ const app = express();
 
 // CORS Middleware (Apply globally)
 const corsOptions = {
-  origin: ['https://memory-frontend-delta.vercel.app', 'http://localhost:3000'], // Use an array for multiple origins
+  origin: ['https://memory-frontend-delta.vercel.app', 'http://localhost:3000'], // Allow both frontend origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // Add x-auth-token here
+  credentials: true, // Allow cookies and authorization headers
 };
-
 
 // Apply CORS globally before routes
 app.use(cors(corsOptions));
