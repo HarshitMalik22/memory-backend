@@ -7,7 +7,7 @@ const app = express();
 
 // CORS Middleware (Apply globally)
 const corsOptions = {
-  origin: 'https://memory-frontend-delta.vercel.app', // No trailing slash
+  origin: 'https://memory-frontend-delta.vercel.app', 'http://localhost:3000' // No trailing slash
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
