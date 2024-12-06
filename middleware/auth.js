@@ -3,22 +3,22 @@ const config = require('config');
 
 module.exports = function (req, res, next) {
   // Get token from header
-  const token = req.header('x-auth-token');
+  const token = req.header('x-auth-token') || req.header('Authorization')?.split(' ')[1];
 
-  // Check if not token, return err msg if not token
+  // Check if no token
   if (!token) {
     return res.status(401).json({ msg: 'No token, authorization denied' });
   }
 
-  // get secret from config
   try {
+    // Verify token
     const decoded = jwt.verify(token, config.get('jwtSecret'));
 
-    // store in user variable
+    // Attach user info to request
     req.user = decoded.user;
     next();
-    // return err msg
   } catch (err) {
-    res.status(401).json({ msg: 'Token not valid' });
+    // Invalid token
+    return res.status(401).json({ msg: 'Token not valid' });
   }
 };
