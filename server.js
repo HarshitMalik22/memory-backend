@@ -5,20 +5,19 @@ const HighScore = require('./models/HighScore'); // High score model import
 const cors = require('cors'); // Import cors
 const app = express();
 
-// Connect DB with error handling
-connectDB();
-
-// Use CORS middleware to allow requests from the frontend
+// CORS Middleware (Apply globally)
 const corsOptions = {
-  origin: 'https://memory-frontend-delta.vercel.app', // Remove trailing slash
+  origin: 'https://memory-frontend-delta.vercel.app', // No trailing slash
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
+// Apply CORS globally before routes
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight
 
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
+// Connect DB with error handling
+connectDB();
 
 // Initialize middleware for JSON parsing
 app.use(express.json());
