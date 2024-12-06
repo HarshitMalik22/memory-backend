@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
-const auth = require('../middleware/auth');
 const { check, validationResult } = require('express-validator');
 const User = require('../models/Users');
 
@@ -24,11 +23,58 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route   POST api/auth
+// @route   POST api/auth/register
+// @desc    Register a new user
+// @access  Public
+router.post(
+  '/register',
+  [
+    check('name', 'Name is required').not().isEmpty(),
+    check('email', 'Please enter a valid email').isEmail(),
+    check('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password } = req.body;
+
+    try {
+      // Check if user already exists
+      let user = await User.findOne({ email });
+      if (user) {
+        return res.status(400).json({ msg: 'User already exists' });
+      }
+
+      // Create new user
+      user = new User({
+        name,
+        email,
+        password,
+      });
+
+      // Encrypt the password
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+
+      // Save the user to the database
+      await user.save();
+
+      res.status(201).json({ msg: 'User registered successfully' });
+    } catch (err) {
+      console.error('Error registering user:', err.message);
+      res.status(500).send('Server Error');
+    }
+  }
+);
+
+// @route   POST api/auth/login
 // @desc    Authenticate user and return token
 // @access  Public
 router.post(
-  '/',
+  '/login',
   [
     check('email', 'Please enter a valid email').isEmail(),
     check('password', 'Password is required').exists(),
