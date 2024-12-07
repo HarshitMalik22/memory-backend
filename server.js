@@ -18,7 +18,10 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight
 
 // Connect DB with error handling
-connectDB();
+connectDB().catch((error) => {
+  console.error('Database connection error:', error.message);
+  process.exit(1); // Exit the process if DB connection fails
+});
 
 // Initialize middleware for JSON parsing
 app.use(express.json());
@@ -33,6 +36,7 @@ app.post('/api/highscore', async (req, res) => {
   try {
     const { username, moves, level } = req.body;
 
+    // Input validation
     if (!username || !moves || !level) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -48,6 +52,7 @@ app.post('/api/highscore', async (req, res) => {
         .json({ message: 'Invalid data types or moves must be positive' });
     }
 
+    // Check for existing high score
     const existingHighScore = await HighScore.findOne({ level }).sort({ moves: 1 });
 
     if (!existingHighScore || moves < existingHighScore.moves) {
@@ -62,12 +67,14 @@ app.post('/api/highscore', async (req, res) => {
       message: 'High score not updated because an existing high score is lower',
     });
   } catch (error) {
+    console.error('Error submitting high score:', error.message);
     res
       .status(500)
       .json({ message: 'Error submitting high score', error: error.message });
   }
 });
 
+// Get High Score Route
 app.get('/api/highscore/:level', async (req, res) => {
   const { level } = req.params;
   try {
@@ -77,6 +84,7 @@ app.get('/api/highscore/:level', async (req, res) => {
     }
     res.status(404).json({ message: 'No high score found for this level' });
   } catch (error) {
+    console.error('Error retrieving high scores:', error.message);
     res
       .status(500)
       .json({ message: 'Error retrieving high scores', error: error.message });
@@ -88,8 +96,19 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
+// Error handling middleware for unexpected issues
+app.use((err, req, res, next) => {
+  console.error('Unexpected Error:', err.message); // Log the unexpected error
+  res.status(500).json({
+    message: 'Something went wrong on the server',
+    error: err.message,
+  });
+});
+
 // Declare port
 const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
-
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});
