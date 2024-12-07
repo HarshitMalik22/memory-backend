@@ -16,38 +16,37 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`Blocked by CORS: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // Add x-auth-token here
-  credentials: true, // Allow cookies and authorization headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true,
 };
 
-// Apply CORS globally before routes
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight requests
 
-// Connect DB with error handling
+// Connect DB
 connectDB();
 
-// Initialize middleware for JSON parsing
+// Middleware
 app.use(express.json());
 
-// Define Routes
+// Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/history', require('./routes/history'));
 
 // High Score Route
 app.post('/api/highscore', async (req, res) => {
+  console.log('High score POST route accessed');
   try {
     const { username, moves, level } = req.body;
-
     if (!username || !moves || !level) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-
     if (
       typeof username !== 'string' ||
       typeof moves !== 'number' ||
@@ -60,7 +59,6 @@ app.post('/api/highscore', async (req, res) => {
     }
 
     const existingHighScore = await HighScore.findOne({ level }).sort({ moves: 1 });
-
     if (!existingHighScore || moves < existingHighScore.moves) {
       const newHighScore = new HighScore({ username, moves, level });
       await newHighScore.save();
@@ -73,6 +71,7 @@ app.post('/api/highscore', async (req, res) => {
       message: 'High score not updated because an existing high score is lower',
     });
   } catch (error) {
+    console.error('Error in High Score POST:', error.message);
     res
       .status(500)
       .json({ message: 'Error submitting high score', error: error.message });
@@ -80,6 +79,7 @@ app.post('/api/highscore', async (req, res) => {
 });
 
 app.get('/api/highscore/:level', async (req, res) => {
+  console.log('High score GET route accessed');
   const { level } = req.params;
   try {
     const highScores = await HighScore.find({ level }).sort({ moves: 1 }).limit(1);
@@ -88,29 +88,31 @@ app.get('/api/highscore/:level', async (req, res) => {
     }
     res.status(404).json({ message: 'No high score found for this level' });
   } catch (error) {
+    console.error('Error in High Score GET:', error.message);
     res
       .status(500)
       .json({ message: 'Error retrieving high scores', error: error.message });
   }
 });
 
-// Root Route for Testing
+// Root Route
 app.get('/', (req, res) => {
+  console.log('Root route accessed');
   res.send('API is running...');
 });
 
-// Catch-All Route for Non-Existent Endpoints
-app.use((req, res, next) => {
+// Catch-All Route
+app.use((req, res) => {
+  console.warn('404 - Endpoint not found:', req.originalUrl);
   res.status(404).json({ message: 'Endpoint not found' });
 });
 
-// Global Error Handling Middleware
+// Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server Error:', err.stack);
   res.status(500).json({ message: 'Server Error', error: err.message });
 });
 
-// Declare port
+// Port
 const PORT = process.env.PORT || 8080;
-
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
