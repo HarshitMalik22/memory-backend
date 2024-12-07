@@ -76,7 +76,7 @@ router.post(
 // @desc    Authenticate user and return token
 // @access  Public
 router.post(
-  '/login',
+  '/signin',
   [
     check('email', 'Please enter a valid email').isEmail(),
     check('password', 'Password is required').exists(),
