@@ -2,12 +2,23 @@ const express = require('express');
 const connectDB = require('./config/db');
 const path = require('path');
 const HighScore = require('./models/HighScore'); // High score model import
-const cors = require('cors'); // Import cors
+const cors = require('cors'); // Import CORS
 const app = express();
 
 // CORS Middleware (Apply globally)
+const allowedOrigins = [
+  'https://memory-frontend-delta.vercel.app', // Production frontend URL
+  'http://localhost:3000', // Localhost for development
+];
+
 const corsOptions = {
-  origin: 'https://memory-frontend-delta.vercel.app', // Allow both frontend origins
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // Add x-auth-token here
   credentials: true, // Allow cookies and authorization headers
@@ -15,7 +26,7 @@ const corsOptions = {
 
 // Apply CORS globally before routes
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight
+app.options('*', cors(corsOptions)); // Handle preflight requests
 
 // Connect DB with error handling
 connectDB();
@@ -86,6 +97,17 @@ app.get('/api/highscore/:level', async (req, res) => {
 // Root Route for Testing
 app.get('/', (req, res) => {
   res.send('API is running...');
+});
+
+// Catch-All Route for Non-Existent Endpoints
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Endpoint not found' });
+});
+
+// Global Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Server Error', error: err.message });
 });
 
 // Declare port
