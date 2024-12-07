@@ -29,7 +29,7 @@ router.get('/', auth, async (req, res) => {
 // @desc    Register a new user
 // @access  Public
 router.post(
-  '/register',
+  '/users',
   [
     check('name', 'Name is required').not().isEmpty(),
     check('email', 'Please enter a valid email').isEmail(),
