@@ -45,33 +45,33 @@ app.post('/api/highscore', async (req, res) => {
       typeof username !== 'string' ||
       typeof moves !== 'number' ||
       typeof level !== 'string' ||
-      moves <= 0
+      moves < 0
     ) {
       return res
         .status(400)
-        .json({ message: 'Invalid data types or moves must be positive' });
+        .json({ message: 'Invalid data types or moves must be non-negative' });
     }
 
-    // Check for existing high score for this user and level
-    const existingHighScore = await HighScore.findOne({ username, level });
+    // Check if the user already has a high score for the level
+    let existingHighScore = await HighScore.findOne({ username, level });
 
-    // If no high score exists for the user and level, create a new one
     if (!existingHighScore) {
-      const newHighScore = new HighScore({ username, moves, level });
-      await newHighScore.save();
-      return res.status(201).json({ message: 'New high score submitted successfully' });
+      // If no high score exists, create a new one for the user with the current score
+      existingHighScore = new HighScore({ username, moves: 0, level });
+      await existingHighScore.save();
+      return res.status(201).json({ message: 'New high score created for user' });
     }
 
-    // If the user has a lower score, update it
-    if (moves < existingHighScore.moves) {
+    // Check if the new moves are better than the current high score (lower moves are better)
+    if (moves < existingHighScore.moves || existingHighScore.moves === 0) {
       existingHighScore.moves = moves;
       await existingHighScore.save();
       return res.status(200).json({ message: 'High score updated successfully' });
     }
 
-    // If the user's score is not better, inform them
+    // If the new score is not better, inform the user
     res.status(200).json({
-      message: 'High score not updated because an existing high score is lower',
+      message: 'High score not updated because an existing high score is lower or equal',
     });
   } catch (error) {
     console.error('Error submitting high score:', error.message);
