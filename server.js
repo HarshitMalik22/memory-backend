@@ -52,25 +52,30 @@ app.post('/api/highscore', async (req, res) => {
         .json({ message: 'Invalid data types or moves must be positive' });
     }
 
-    // Check for existing high score
-    const existingHighScore = await HighScore.findOne({ level }).sort({ moves: 1 });
+    // Check for existing high score for this user and level
+    const existingHighScore = await HighScore.findOne({ username, level });
 
-    if (!existingHighScore || moves < existingHighScore.moves) {
+    // If no high score exists for the user and level, create a new one
+    if (!existingHighScore) {
       const newHighScore = new HighScore({ username, moves, level });
       await newHighScore.save();
-      return res
-        .status(201)
-        .json({ message: 'New high score submitted successfully' });
+      return res.status(201).json({ message: 'New high score submitted successfully' });
     }
 
+    // If the user has a lower score, update it
+    if (moves < existingHighScore.moves) {
+      existingHighScore.moves = moves;
+      await existingHighScore.save();
+      return res.status(200).json({ message: 'High score updated successfully' });
+    }
+
+    // If the user's score is not better, inform them
     res.status(200).json({
       message: 'High score not updated because an existing high score is lower',
     });
   } catch (error) {
     console.error('Error submitting high score:', error.message);
-    res
-      .status(500)
-      .json({ message: 'Error submitting high score', error: error.message });
+    res.status(500).json({ message: 'Error submitting high score', error: error.message });
   }
 });
 
@@ -85,9 +90,7 @@ app.get('/api/highscore/:level', async (req, res) => {
     res.status(404).json({ message: 'No high score found for this level' });
   } catch (error) {
     console.error('Error retrieving high scores:', error.message);
-    res
-      .status(500)
-      .json({ message: 'Error retrieving high scores', error: error.message });
+    res.status(500).json({ message: 'Error retrieving high scores', error: error.message });
   }
 });
 
