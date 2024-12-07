@@ -79,15 +79,24 @@ app.post('/api/highscore', async (req, res) => {
   }
 });
 
-// Get High Score Route
+// Get High Score Route with email query parameter
 app.get('/api/highscore/:level', async (req, res) => {
   const { level } = req.params;
+  const { email } = req.query; // Extract email from query parameters
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
   try {
-    const highScores = await HighScore.find({ level }).sort({ moves: 1 }).limit(1);
+    // Find the high score for the user (email) at the specified level
+    const highScores = await HighScore.find({ level, username: email }).sort({ moves: 1 }).limit(1);
+
     if (highScores.length > 0) {
       return res.json(highScores[0]);
     }
-    res.status(404).json({ message: 'No high score found for this level' });
+
+    res.status(404).json({ message: 'No high score found for this user and level' });
   } catch (error) {
     console.error('Error retrieving high scores:', error.message);
     res.status(500).json({ message: 'Error retrieving high scores', error: error.message });
