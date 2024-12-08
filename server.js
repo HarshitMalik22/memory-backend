@@ -90,31 +90,27 @@ app.post("/api/highscore", async (req, res) => {
 });
 
 // Retrieve High Score for a User and Level
-app.get("/api/highscore/:level", async (req, res) => {
-  const { level } = req.params;
-  const token = req.header("x-auth-token");
+const jwt = require('jsonwebtoken');
+const HighScore = require('./models/highscore'); // Ensure this is correct
 
-  if (!token) {
-    return res.status(401).json({ message: "No token, authorization denied" });
-  }
+app.get('/api/highscore/:level', async (req, res) => {
+  const token = req.header('x-auth-token');
+  if (!token) return res.status(401).send({ message: 'Token missing' });
 
   try {
-    // Verify and Decode Token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const username = decoded.user.username;
+    const { username } = decoded;
+    const { level } = req.params;
 
-    // Find High Score for User and Level
     const highScore = await HighScore.findOne({ username, level });
-
-    if (highScore) {
-      return res.json(highScore);
+    if (!highScore) {
+      return res.status(404).send({ moves: null, message: 'No high score yet' });
     }
 
-    // Return "Not Played Yet" if No High Score Exists
-    res.status(404).json({ message: "Not played yet" });
+    res.send({ moves: highScore.moves });
   } catch (error) {
-    console.error("Error retrieving high scores:", error.message);
-    res.status(500).json({ message: "Error retrieving high scores", error: error.message });
+    console.error(error);
+    res.status(500).send({ message: 'Error retrieving high scores', error: error.message });
   }
 });
 
