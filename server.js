@@ -8,12 +8,18 @@ require("dotenv").config();
 
 const app = express();
 
+// Check for missing JWT Secret
+if (!process.env.jwtSecret) {
+  console.error("jwtSecret is missing in .env file");
+  process.exit(1); // Exit the process if JWT secret is not available
+}
+
 // CORS Middleware Configuration
 const corsOptions = {
   origin: ["https://memory-frontend-delta.vercel.app", "http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
-  credentials: true,
+  credentials: true, // Allow credentials (cookies, tokens)
 };
 
 // Apply CORS Middleware
@@ -27,7 +33,7 @@ app.options("*", cors(corsOptions));
     console.log("Database connected successfully");
   } catch (error) {
     console.error("Database connection error:", error.message);
-    process.exit(1);
+    process.exit(1); // Exit if connection fails
   }
 })();
 
@@ -85,7 +91,10 @@ app.post("/api/highscore", async (req, res) => {
     });
   } catch (error) {
     console.error("Error submitting high score:", error.message);
-    res.status(500).json({ message: "Error submitting high score", error: error.message });
+    res.status(500).json({
+      message: "Error submitting high score",
+      error: error.message || error,
+    });
   }
 });
 
@@ -107,7 +116,10 @@ app.get("/api/highscore/:level", async (req, res) => {
     res.send({ moves: highScore.moves });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ message: "Error retrieving high scores", error: error.message });
+    res.status(500).send({
+      message: "Error retrieving high scores",
+      error: error.message || error,
+    });
   }
 });
 
@@ -121,7 +133,7 @@ app.use((err, req, res, next) => {
   console.error("Unexpected Error:", err.message);
   res.status(500).json({
     message: "Something went wrong on the server",
-    error: err.message,
+    error: err.message || err,
   });
 });
 
