@@ -1,7 +1,7 @@
 const express = require("express");
 const connectDB = require("./config/db");
 const path = require("path");
-const HighScore = require("./models/HighScore"); // High score model import
+const HighScore = require("./models/HighScore"); // Correct import for the highscore model
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -90,12 +90,9 @@ app.post("/api/highscore", async (req, res) => {
 });
 
 // Retrieve High Score for a User and Level
-const jwt = require('jsonwebtoken');
-const HighScore = require('./models/highscore'); // Ensure this is correct
-
-app.get('/api/highscore/:level', async (req, res) => {
-  const token = req.header('x-auth-token');
-  if (!token) return res.status(401).send({ message: 'Token missing' });
+app.get("/api/highscore/:level", async (req, res) => {
+  const token = req.header("x-auth-token");
+  if (!token) return res.status(401).send({ message: "Token missing" });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -104,13 +101,13 @@ app.get('/api/highscore/:level', async (req, res) => {
 
     const highScore = await HighScore.findOne({ username, level });
     if (!highScore) {
-      return res.status(404).send({ moves: null, message: 'No high score yet' });
+      return res.status(404).send({ moves: null, message: "No high score yet" });
     }
 
     res.send({ moves: highScore.moves });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ message: 'Error retrieving high scores', error: error.message });
+    res.status(500).send({ message: "Error retrieving high scores", error: error.message });
   }
 });
 
