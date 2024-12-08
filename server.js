@@ -1,29 +1,33 @@
 const express = require('express');
 const connectDB = require('./config/db');
 const path = require('path');
-const HighScore = require('./models/HighScore'); // High score model import
-const cors = require('cors'); // Import cors
-const jwt = require('jsonwebtoken'); // Import JWT for token verification
-const config = require('config'); // Import config for configuration management
+const HighScore = require('./models/HighScore');
+const cors = require('cors');
+const auth = require('./middleware/auth');
+const config = require('config');
 const app = express();
 
-// CORS Middleware (Apply globally)
+// CORS Middleware Configuration
 const corsOptions = {
-  origin: ['https://memory-frontend-delta.vercel.app', 'http://localhost:3000'], // Allow both frontend origins
+  origin: ['https://memory-frontend-delta.vercel.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // Add x-auth-token here
-  credentials: true, // Allow cookies and authorization headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true,
 };
 
-// Apply CORS globally before routes
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight
+app.options('*', cors(corsOptions));
 
-// Connect DB with error handling
-connectDB().catch((error) => {
-  console.error('Database connection error:', error.message);
-  process.exit(1); // Exit the process if DB connection fails
-});
+// Connect to the Database with error handling
+(async () => {
+  try {
+    await connectDB();
+    console.log('Database connected successfully');
+  } catch (error) {
+    console.error('Database connection error:', error.message);
+    process.exit(1); // Exit the process if DB connection fails
+  }
+})();
 
 // Initialize middleware for JSON parsing
 app.use(express.json());
@@ -35,7 +39,7 @@ app.use('/api/history', require('./routes/history'));
 
 // High Score Routes
 // Update or Create High Score
-app.post('/api/auth/highscore/:level', async (req, res) => {
+app.post('/api/highscore', auth, async (req, res) => {
   try {
     const { username, moves, level } = req.body;
 
@@ -44,15 +48,8 @@ app.post('/api/auth/highscore/:level', async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    if (
-      typeof username !== 'string' ||
-      typeof moves !== 'number' ||
-      typeof level !== 'string' ||
-      moves < 0
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Invalid data types or moves must be non-negative' });
+    if (typeof username !== 'string' || typeof moves !== 'number' || typeof level !== 'string' || moves < 0) {
+      return res.status(400).json({ message: 'Invalid data types or moves must be non-negative' });
     }
 
     // Find the user's existing high score for the level
@@ -73,9 +70,7 @@ app.post('/api/auth/highscore/:level', async (req, res) => {
     }
 
     // If the new score is not better, return a message
-    res.status(200).json({
-      message: 'High score not updated because an existing high score is lower or equal',
-    });
+    res.status(200).json({ message: 'High score not updated because an existing high score is lower or equal' });
   } catch (error) {
     console.error('Error submitting high score:', error.message);
     res.status(500).json({ message: 'Error submitting high score', error: error.message });
@@ -83,25 +78,12 @@ app.post('/api/auth/highscore/:level', async (req, res) => {
 });
 
 // Retrieve High Score for a User and Level
-app.get('/api/auth/highscore/:level', async (req, res) => {
+app.get('/api/highscore/:level', auth, async (req, res) => {
   const { level } = req.params;
-  const token = req.header('x-auth-token'); // Get the token from the request header
-
-  if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
 
   try {
-    // Load the JWT secret from config
-    const jwtSecret = config.get('jwtSecret');
-    console.log('JWT Secret:', jwtSecret); // For debugging purposes, you can remove this in production
-
-    // Decode the token to get the user's information (e.g., username or user ID)
-    const decoded = jwt.verify(token, jwtSecret); // Using the jwtSecret from config
-    const username = decoded.user.username; // Or decoded.user.email depending on your token payload
-
     // Find the high score for the user at the specified level
-    const highScore = await HighScore.findOne({ username, level });
+    const highScore = await HighScore.findOne({ username: req.user.username, level });
 
     if (highScore) {
       return res.json(highScore); // Return the high score data
@@ -136,3 +118,4 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
+
