@@ -3,6 +3,7 @@ const connectDB = require('./config/db');
 const path = require('path');
 const HighScore = require('./models/HighScore'); // High score model import
 const cors = require('cors'); // Import cors
+const jwt = require('jsonwebtoken'); // Import JWT for token verification
 const app = express();
 
 // CORS Middleware (Apply globally)
@@ -31,7 +32,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/history', require('./routes/history'));
 
-// High Score Route
+// High Score Routes
+// Update or Create High Score
 app.post('/api/highscore', async (req, res) => {
   try {
     const { username, moves, level } = req.body;
@@ -52,24 +54,24 @@ app.post('/api/highscore', async (req, res) => {
         .json({ message: 'Invalid data types or moves must be non-negative' });
     }
 
-    // Check if the user already has a high score for the level
-    let existingHighScore = await HighScore.findOne({ username, level });
+    // Find the user's existing high score for the level
+    let highScore = await HighScore.findOne({ username, level });
 
-    if (!existingHighScore) {
-      // If no high score exists, create a new one for the user with the current score
-      existingHighScore = new HighScore({ username, moves: 0, level });
-      await existingHighScore.save();
+    if (!highScore) {
+      // If no high score exists, create a new one
+      highScore = new HighScore({ username, moves, level });
+      await highScore.save();
       return res.status(201).json({ message: 'New high score created for user' });
     }
 
-    // Check if the new moves are better than the current high score (lower moves are better)
-    if (moves < existingHighScore.moves || existingHighScore.moves === 0) {
-      existingHighScore.moves = moves;
-      await existingHighScore.save();
+    // Update if the new score is better (lower moves are better)
+    if (moves < highScore.moves || highScore.moves === 0) {
+      highScore.moves = moves;
+      await highScore.save();
       return res.status(200).json({ message: 'High score updated successfully' });
     }
 
-    // If the new score is not better, inform the user
+    // If the new score is not better, return a message
     res.status(200).json({
       message: 'High score not updated because an existing high score is lower or equal',
     });
@@ -79,24 +81,29 @@ app.post('/api/highscore', async (req, res) => {
   }
 });
 
-// Get High Score Route with email query parameter
+// Retrieve High Score for a User and Level
 app.get('/api/highscore/:level', async (req, res) => {
   const { level } = req.params;
-  const { email } = req.query; // Extract email from query parameters
+  const token = req.header('x-auth-token'); // Get the token from the request header
 
-  if (!email) {
-    return res.status(400).json({ message: 'Email is required' });
+  if (!token) {
+    return res.status(401).json({ message: 'No token, authorization denied' });
   }
 
   try {
-    // Find the high score for the user (email) at the specified level
-    const highScores = await HighScore.find({ level, username: email }).sort({ moves: 1 }).limit(1);
+    // Decode the token to get the user's information (e.g., username or user ID)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Assuming you're using JWT for authentication
+    const username = decoded.user.username; // Or decoded.user.email depending on your token payload
 
-    if (highScores.length > 0) {
-      return res.json(highScores[0]);
+    // Find the high score for the user at the specified level
+    const highScore = await HighScore.findOne({ username, level });
+
+    if (highScore) {
+      return res.json(highScore); // Return the high score data
     }
 
-    res.status(404).json({ message: 'No high score found for this user and level' });
+    // If no high score exists, return "not played yet"
+    res.status(404).json({ message: 'Not played yet' });
   } catch (error) {
     console.error('Error retrieving high scores:', error.message);
     res.status(500).json({ message: 'Error retrieving high scores', error: error.message });
@@ -124,3 +131,4 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
+
