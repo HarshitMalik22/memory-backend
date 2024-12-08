@@ -95,7 +95,7 @@ app.get("/api/highscore/:level", async (req, res) => {
   if (!token) return res.status(401).send({ message: "Token missing" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.jwtSecret);
     const { username } = decoded;
     const { level } = req.params;
 
