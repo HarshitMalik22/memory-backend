@@ -108,7 +108,7 @@ router.post(
         },
       };
 
-      // Sign the token
+      // Sign the token and send it in the response
       jwt.sign(
         payload,
         config.get('jwtSecret'),
@@ -118,7 +118,7 @@ router.post(
             console.error('Error signing token:', err.message);
             throw err;
           }
-          res.json({ token });
+          res.json({ token, email: user.email });  // Send the token and email to the frontend
         }
       );
     } catch (err) {
