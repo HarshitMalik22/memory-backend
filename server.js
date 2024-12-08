@@ -35,7 +35,7 @@ app.use('/api/history', require('./routes/history'));
 
 // High Score Routes
 // Update or Create High Score
-app.post('/api/highscore', async (req, res) => {
+app.post('/api/auth/highscore/:level', async (req, res) => {
   try {
     const { username, moves, level } = req.body;
 
@@ -83,7 +83,7 @@ app.post('/api/highscore', async (req, res) => {
 });
 
 // Retrieve High Score for a User and Level
-app.get('/api/highscore/:level', async (req, res) => {
+app.get('/api/auth/highscore/:level', async (req, res) => {
   const { level } = req.params;
   const token = req.header('x-auth-token'); // Get the token from the request header
 
