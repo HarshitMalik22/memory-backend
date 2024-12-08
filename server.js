@@ -4,6 +4,7 @@ const path = require('path');
 const HighScore = require('./models/HighScore'); // High score model import
 const cors = require('cors'); // Import cors
 const jwt = require('jsonwebtoken'); // Import JWT for token verification
+const config = require('config'); // Import config for configuration management
 const app = express();
 
 // CORS Middleware (Apply globally)
@@ -91,8 +92,12 @@ app.get('/api/highscore/:level', async (req, res) => {
   }
 
   try {
+    // Load the JWT secret from config
+    const jwtSecret = config.get('jwtSecret');
+    console.log('JWT Secret:', jwtSecret); // For debugging purposes, you can remove this in production
+
     // Decode the token to get the user's information (e.g., username or user ID)
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Assuming you're using JWT for authentication
+    const decoded = jwt.verify(token, jwtSecret); // Using the jwtSecret from config
     const username = decoded.user.username; // Or decoded.user.email depending on your token payload
 
     // Find the high score for the user at the specified level
